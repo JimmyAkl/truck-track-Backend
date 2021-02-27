@@ -14,9 +14,11 @@ app.use(express.static(__dirname + '/public'));
 
 
 const productsRouter = require('./express-routers/productsRouter');
-
 app.use('/products', productsRouter);
 
+
+const ordersRouter = require('./express-routers/ordersRouter');
+app.use('/orders', ordersRouter);
 
 app.use((req, res, next) => {
   console.log(req.headers);

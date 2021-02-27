@@ -1,62 +1,80 @@
-
-  
 const express = require('express');
 const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
+
+const Products = require('../models/products');
 
 const productsRouter = express.Router();
 
 productsRouter.use(bodyParser.json());
 
 productsRouter.route('/')
-.all((req,res,next) => {
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/plain');
-    next();
-})
 .get((req,res,next) => {
-    res.end('Will send all the products to you!');
+    Products.find({})
+    .then((products) => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(products);
+    }, (err) => next(err))
+    .catch((err) => next(err));
 })
-
 .post((req, res, next) => {
-    res.end('Will add your product: ' + req.body.name + ' with details: ' + req.body.description);
+    Products.create(req.body)
+    .then((product) => {
+        console.log('Product Created ', product);
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(product);
+    }, (err) => next(err))
+    .catch((err) => next(err));
 })
-
 .put((req, res, next) => {
     res.statusCode = 403;
-    res.end('Put operation not supported on products');
+    res.end('PUT operation not supported on /products');
 })
 .delete((req, res, next) => {
-    res.end('Will delete all the products');
+    Products.remove({})
+    .then((resp) => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(resp);
+    }, (err) => next(err))
+    .catch((err) => next(err));    
 });
 
-
 productsRouter.route('/:productId')
-.all((req,res,next) => {
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/plain');
-    next();
-})
-
-
 .get((req,res,next) => {
-    res.end('Will send details of your product : ' + req.params.productId);
+    Products.findById(req.params.productId)
+    .then((product) => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(product);
+    }, (err) => next(err))
+    .catch((err) => next(err));
 })
-
-
 .post((req, res, next) => {
-  res.statusCode = 403;
-  res.end('Post operation not supported on /products/'+ req.params.productId);
+    res.statusCode = 403;
+    res.end('POST operation not supported on /products/'+ req.params.productId);
 })
-
 .put((req, res, next) => {
-  res.write('Updating the product: ' + req.params.productId + '\n');
-  res.end('Will update the product: ' + req.body.name + 
-        ' with details: ' + req.body.description);
+   Products.findByIdAndUpdate(req.params.productId, {
+        $set: req.body
+    }, { new: true })
+    .then((product) => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(product);
+    }, (err) => next(err))
+    .catch((err) => next(err));
 })
-
 .delete((req, res, next) => {
-    res.end('Deleting product: ' + req.params.productId);
+    Products.findByIdAndRemove(req.params.productId)
+    .then((resp) => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(resp);
+    }, (err) => next(err))
+    .catch((err) => next(err));
 });
 
 module.exports = productsRouter;
-
