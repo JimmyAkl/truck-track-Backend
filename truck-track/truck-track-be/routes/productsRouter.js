@@ -6,7 +6,11 @@ const Products = require('../models/products');
 
 const productsRouter = express.Router();
 
+var authenticate = require('../authenticate');
+
 productsRouter.use(bodyParser.json());
+
+
 
 productsRouter.route('/')
 .get((req,res,next) => {
@@ -18,7 +22,11 @@ productsRouter.route('/')
     }, (err) => next(err))
     .catch((err) => next(err));
 })
-.post((req, res, next) => {
+
+
+////////// ta y3ml aunthentication abel ma y3ml he l operation 
+
+.post(authenticate.verifyUser,(req, res, next) => {
     Products.create(req.body)
     .then((product) => {
         console.log('Product Created ', product);
@@ -28,11 +36,15 @@ productsRouter.route('/')
     }, (err) => next(err))
     .catch((err) => next(err));
 })
-.put((req, res, next) => {
+
+
+.put(authenticate.verifyUser,(req, res, next) => {
     res.statusCode = 403;
     res.end('PUT operation not supported on /products');
 })
-.delete((req, res, next) => {
+
+
+.delete(authenticate.verifyUser,(req, res, next) => {
     Products.remove({})
     .then((resp) => {
         res.statusCode = 200;
@@ -52,11 +64,11 @@ productsRouter.route('/:productId')
     }, (err) => next(err))
     .catch((err) => next(err));
 })
-.post((req, res, next) => {
+.post(authenticate.verifyUser,(req, res, next) => {
     res.statusCode = 403;
     res.end('POST operation not supported on /products/'+ req.params.productId);
 })
-.put((req, res, next) => {
+.put(authenticate.verifyUser,(req, res, next) => {
    Products.findByIdAndUpdate(req.params.productId, {
         $set: req.body
     }, { new: true })
@@ -67,7 +79,7 @@ productsRouter.route('/:productId')
     }, (err) => next(err))
     .catch((err) => next(err));
 })
-.delete((req, res, next) => {
+.delete(authenticate.verifyUser,(req, res, next) => {
     Products.findByIdAndRemove(req.params.productId)
     .then((resp) => {
         res.statusCode = 200;
