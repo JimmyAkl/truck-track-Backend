@@ -6,19 +6,89 @@ var passport = require('passport');
 var authenticate = require('../authenticate');
 var router = express.Router();
 
-
-
 router.use(bodyParser.json());
 /* GET users listing. */
-
 
 router.get('/', function(req, res, next) {
   res.send('respond with a resource');
 });
 
+router.route('/:userId')
+.get((req,res,next) => {
+    User.findById(req.params.userId)
+    .then((user) => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(user);
+    }, (err) => next(err))
+    .catch((err) => next(err));
+});
 
+router.route('/:userId/shipments')
+.get((req,res,next) => {
+  User.findById(req.params.userId)
+  .then((user) => {
+      if (user != null) {
+          res.statusCode = 200;
+          res.setHeader('Content-Type', 'application/json');
+          res.json(user.shipments);
+      }
+      else {
+          err = new Error('User ' + req.params.userId + ' not found');
+          err.status = 404;
+          return next(err);
+      }
+  }, (err) => next(err))
+  .catch((err) => next(err));
+});
 
-
+router.route('/:userId/shipments/:shipmentId')
+.get((req,res,next) => {
+  User.findById(req.params.userId)
+  .then((user) => {
+      if (user != null && user.shipments.id(req.params.shipmentId) != null) {
+          res.statusCode = 200;
+          res.setHeader('Content-Type', 'application/json');
+          res.json(user.shipments.id(req.params.shipmentId));
+      }
+      else if (user == null) {
+          err = new Error('User ' + req.params.userId + ' not found');
+          err.status = 404;
+          return next(err);
+      }
+      else {
+          err = new Error('Shipment ' + req.params.shipmentId + ' not found');
+          err.status = 404;
+          return next(err);            
+      }
+  }, (err) => next(err))
+  .catch((err) => next(err));
+})
+.delete((req, res, next) => {
+  User.findById(req.params.userId)
+  .then((user) => {
+      if (user != null && user.shipments.id(req.params.shipmentId) != null) {
+          user.shipments.id(req.params.shipmentId).remove();
+          user.save()
+          .then((user) => {
+              res.statusCode = 200;
+              res.setHeader('Content-Type', 'application/json');
+              res.json(user);                
+          }, (err) => next(err));
+      }
+      else if (user == null) {
+          err = new Error('User ' + req.params.userId + ' not found');
+          err.status = 404;
+          return next(err);
+      }
+      else {
+          err = new Error('Shipment' + req.params.shipmentId + ' not found');
+          err.status = 404;
+          return next(err);            
+      }
+  }, (err) => next(err))
+  .catch((err) => next(err));
+});
 
 router.post('/signup', (req, res, next) => {
   User.register(new User({username: req.body.username}), 
@@ -38,28 +108,18 @@ router.post('/signup', (req, res, next) => {
   });
 });
 
-
 router.post('/login', passport.authenticate('local'), (req, res) => {
-
   var token = authenticate.getToken({_id: req.user._id});
   res.statusCode = 200;
   res.setHeader('Content-Type', 'application/json');
   res.json({success: true, token: token, status: 'You are successfully logged in!'});
 });
 
+router.get('/logout', function(req, res) {
+  req.logout();
+  res.status(200).json({status: 'Bye!'
+  });
 
-router.get('/logout', (req, res) => {
-  if (req.session) {
-    req.session.destroy();
-    res.clearCookie('session-id');
-    res.redirect('/');
-  }
-  else{
-    const err = new Error('You are not logged in !');
-    err.status = 403; 
-    next(err);
-  }
-  
 });
 
 

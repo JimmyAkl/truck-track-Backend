@@ -12,7 +12,7 @@ const mongoose = require('mongoose');
 var session = require('express-session');
 var FileStore = require('session-file-store')(session);
 
-const Products = require('./models/products');
+const Shipments = require('./models/shipments');
 
 
 
@@ -48,8 +48,8 @@ app.use('/users', usersRouter);
 
 
 /////////////////////////////////////////////////// ProductsRouter
-var productsRouter = require('./routes/productsRouter');
-app.use('/products',productsRouter);
+var shipmentRouter = require('./routes/shipmentRouter');
+app.use('/shipments',shipmentRouter);
 
 
 
