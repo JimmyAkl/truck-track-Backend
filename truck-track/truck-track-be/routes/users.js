@@ -24,74 +24,8 @@ router.route('/:userId')
     .catch((err) => next(err));
 });
 
-router.route('/:userId/shipments')
-.get((req,res,next) => {
-  User.findById(req.params.userId)
-  .then((user) => {
-      if (user != null) {
-          res.statusCode = 200;
-          res.setHeader('Content-Type', 'application/json');
-          res.json(user.shipments);
-      }
-      else {
-          err = new Error('User ' + req.params.userId + ' not found');
-          err.status = 404;
-          return next(err);
-      }
-  }, (err) => next(err))
-  .catch((err) => next(err));
-});
-
-router.route('/:userId/shipments/:shipmentId')
-.get((req,res,next) => {
-  User.findById(req.params.userId)
-  .then((user) => {
-      if (user != null && user.shipments.id(req.params.shipmentId) != null) {
-          res.statusCode = 200;
-          res.setHeader('Content-Type', 'application/json');
-          res.json(user.shipments.id(req.params.shipmentId));
-      }
-      else if (user == null) {
-          err = new Error('User ' + req.params.userId + ' not found');
-          err.status = 404;
-          return next(err);
-      }
-      else {
-          err = new Error('Shipment ' + req.params.shipmentId + ' not found');
-          err.status = 404;
-          return next(err);            
-      }
-  }, (err) => next(err))
-  .catch((err) => next(err));
-})
-.delete((req, res, next) => {
-  User.findById(req.params.userId)
-  .then((user) => {
-      if (user != null && user.shipments.id(req.params.shipmentId) != null) {
-          user.shipments.id(req.params.shipmentId).remove();
-          user.save()
-          .then((user) => {
-              res.statusCode = 200;
-              res.setHeader('Content-Type', 'application/json');
-              res.json(user);                
-          }, (err) => next(err));
-      }
-      else if (user == null) {
-          err = new Error('User ' + req.params.userId + ' not found');
-          err.status = 404;
-          return next(err);
-      }
-      else {
-          err = new Error('Shipment' + req.params.shipmentId + ' not found');
-          err.status = 404;
-          return next(err);            
-      }
-  }, (err) => next(err))
-  .catch((err) => next(err));
-});
-
 router.post('/signup', (req, res, next) => {
-  User.register(new User({username: req.body.username}), 
+  User.register(new User({ username: req.body.username, email: req.body.email, admin: req.body.admin }), 
     req.body.password, (err, user) => {
     if(err) {
       res.statusCode = 500;
@@ -122,6 +56,4 @@ router.get('/logout', function(req, res) {
 
 });
 
-
 module.exports = router;
-

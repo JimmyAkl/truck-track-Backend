@@ -1,56 +1,32 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-var updateSchema = new Schema({
-    Number:  {
-        type: Number,
-        required: true,
-        default: 0
-    },
-    temperature:  {
-        type: Number,
-        required: true
-    },
-    vibration:  {
-        type: Number,
-        required: true
-    },
-    humidity: {
-        type: Number,
-        required: true
-    },
-    longitude: {
-        type: Number,
-        required: true
-    },
-    latitude: {
-        type: Number,
-        required: true
-    }
-}, {
-    timestamps: true
-});
-
+const Updates = require('./update');
 
 const shipmentSchema = new Schema({
-    ID:{
-        type:String,
-        //required:true,
-        unique:true
+    ID: {
+        type: String,
+        required: true,
+        unique: true
     },
-    name:{
-        type:String,
-        required:true
+    title: {
+        type: String,
+        required: true
     },
-    supervisor:{
-        type:String,
-        required:true
-
+    supervisoremail: {
+        type: String,
     },
-    client:{
-        type:String,
-        required:true
-
+    supervisornumber: {
+        type: String,
+        required: true
+    },
+    clientemail: {
+        type: String,
+        required: true
+    },
+    clientnumber: {
+        type: String,
+        required: true
     },
     startlocation: {
         type: String,
@@ -68,24 +44,24 @@ const shipmentSchema = new Schema({
         type: Date,
         required: true
     },
-    status:{
-        type:String,
-        required:true,
-        default:''
+    status: {
+        type: String,
+        required: true,
+        default: ''
     },
     temperature: {
         type: String,
-        default:''
+        default: ''
     },
     vibration: {
         type: String,
-        default:''
+        default: ''
     },
     humidity: {
         type: String,
-        default:''
+        default: ''
     },
-    updates:[updateSchema]
+    updates: [Updates.schema]
 },{
     timestamps: true
 });

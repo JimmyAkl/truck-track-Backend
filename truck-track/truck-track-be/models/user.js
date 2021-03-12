@@ -1,9 +1,6 @@
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 
-const Shipments = require('./shipments');
-
-
 var passportLocalMongoose = require('passport-local-mongoose');
 
 var User = new Schema({
@@ -11,7 +8,11 @@ var User = new Schema({
         type: Boolean,
         default: false
     },
-    shipments: [Shipments.schema]
+    email: {
+        type: String,
+        unique: true,
+        required: true
+    }
 });
 
 User.plugin(passportLocalMongoose);

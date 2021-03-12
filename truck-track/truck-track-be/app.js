@@ -42,16 +42,8 @@ app.use(passport.initialize());
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 
-/////////authentication
-
-
-
-
-/////////////////////////////////////////////////// ProductsRouter
 var shipmentRouter = require('./routes/shipmentRouter');
 app.use('/shipments',shipmentRouter);
-
-
 
 
 const url = config.mongoUrl;

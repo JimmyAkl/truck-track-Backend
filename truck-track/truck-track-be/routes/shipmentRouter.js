@@ -3,33 +3,60 @@ const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 
 const Shipments = require('../models/shipments');
+const Users = require('../models/user');
 var authenticate = require('../authenticate');
+const user = require('../models/user');
 
 const shipmentRouter = express.Router();
 shipmentRouter.use(bodyParser.json());
 
 shipmentRouter.route('/')
-.get((req,res,next) => {
-    Shipments.find({})
+.get(authenticate.verifyUser,(req,res,next) => {
+    if (req.user.admin) {   //supervisor shipments with access on all fields
+    Shipments.find({ supervisoremail: req.user.email })
     .then((shipments) => {
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
         res.json(shipments);
     }, (err) => next(err))
     .catch((err) => next(err));
+    }
+    else if (!req.user.admin) { //client shipments with access on certain fields only
+        Shipments.find({ clientemail: req.user.email }, { ID: 1, name: 1, supervisoremail: 1, supervisornumber: 1,
+            clientemail: 1, clientnumber: 1, startlocation: 1, endlocation: 1, expectedDeparture: 1,
+            expectedArrival: 1, status: 1 })
+            .then((shipments) => {
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json(shipments);
+            }, (err) => next(err))
+            .catch((err) => next(err));
+        }
+    (err) => next(err)
+    .catch((err) => next(err));
 })
 
-//if logged in
-.post(authenticate.verifyUser,(req, res, next) => {
-    Shipments.create(req.body)
-    .then((shipment) => {
-        console.log('Shipment Created ', shipment);
-        req.user.shipments.push(shipment);
-        req.user.save();
-        res.statusCode = 200;
-        res.setHeader('Content-Type', 'application/json');
-        res.json(shipment);
-    }, (err) => next(err))
+.post(authenticate.verifyUser,async function(req, res, next) { //only for admins
+    if (req.user.admin) {
+        Shipments.create(req.body)
+        .then((shipment) => {
+            Shipments.findById(shipment._id)
+            .then((shipment) => {
+                shipment.supervisoremail = req.user.email;  //email of supervisor not required in post
+                shipment.save();
+                console.log('Shipment Created ', shipment);
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json(shipment);
+            })
+        }, (err) => next(err))
+        .catch((err) => next(err));
+    }
+    else {
+        err = new Error('User ' + req.user + ' not admin');
+        err.status = 404;
+        return next(err);
+    } (err) => next(err)
     .catch((err) => next(err));
 })
 
@@ -38,50 +65,91 @@ shipmentRouter.route('/')
     res.end('PUT operation not supported on /shipments');
 })
 
-.delete(authenticate.verifyUser,(req, res, next) => {
-    Shipments.remove({})
+.delete(authenticate.verifyUser,(req, res, next) => { //supervisor deletes all his shipments
+    if (req.user.admin) {
+    Shipments.remove({ supervisoremail: req.user.email })
     .then((resp) => {
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
         res.json(resp);
     }, (err) => next(err))
-    .catch((err) => next(err));    
+    .catch((err) => next(err));
+        }
+    else {
+        err = new Error('User ' + req.user + ' not admin');
+        err.status = 404;
+        return next(err);
+    } (err) => next(err)
+    .catch((err) => next(err));   
 });
 
 shipmentRouter.route('/:shipmentId')
-.get((req,res,next) => {
-    Shipments.findById(req.params.shipmentId)
-    .then((shipment) => {
-        res.statusCode = 200;
-        res.setHeader('Content-Type', 'application/json');
-        res.json(shipment);
-    }, (err) => next(err))
-    .catch((err) => next(err));
+// to access shipment by ID
+.get(authenticate.verifyUser,(req,res,next) => {
+    if (req.user.admin) { //make sure admin and his own shipments
+        Shipments.find({ _id: req.params.shipmentId, supervisoremail: req.user.email })
+        .then((shipment) => {
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            res.json(shipment);
+        }, (err) => next(err))
+        .catch((err) => next(err));
+    }
+    else if (!req.user.admin) { //client and his own shipments with the allowed fields
+        Shipments.find({ _id: req.params.shipmentId, clientemail: req.user.email },
+            { ID: 1, name: 1, supervisoremail: 1, supervisornumber: 1,
+                clientemail: 1, clientnumber: 1, startlocation: 1, endlocation: 1, expectedDeparture: 1,
+                expectedArrival: 1, status: 1 })
+        .then((shipment) => {
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            res.json(shipment);
+        }, (err) => next(err))
+        .catch((err) => next(err));
+    }
 })
 .post(authenticate.verifyUser,(req, res, next) => {
     res.statusCode = 403;
     res.end('POST operation not supported on /shipments/'+ req.params.shipmentId);
 })
 .put(authenticate.verifyUser,(req, res, next) => {
-   Shipments.findByIdAndUpdate(req.params.shipmentId, {
-        $set: req.body
-    }, { new: true })
-    .then((shipment) => {
-        res.statusCode = 200;
-        res.setHeader('Content-Type', 'application/json');
-        res.json(shipment);
-    }, (err) => next(err))
+    if (req.user.admin == true) { //only admin can modify, only his shipments
+        Shipments.findOneAndUpdate({ _id: req.params.shipmentId, supervisoremail: req.user.email }, {
+            $set: req.body
+        }, { new: true })
+        .then((shipment) => {
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            res.json(shipment);
+        }, (err) => next(err))
+        .catch((err) => next(err));
+    }
+    else {
+        err = new Error('Authentication ERROR: ' + req.user + ' not admin');
+        err.status = 404;
+        return next(err);
+    }(err) => next(err)
     .catch((err) => next(err));
 })
 .delete(authenticate.verifyUser,(req, res, next) => {
-    Shipments.findByIdAndRemove(req.params.shipmentId)
-    .then((resp) => {
-        res.statusCode = 200;
-        res.setHeader('Content-Type', 'application/json');
-        res.json(resp);
-    }, (err) => next(err))
+    if (req.user.admin == true ) { //only admin can delete, only his shipments
+        Shipments.findOneAndRemove({ _id: req.params.shipmentId, supervisoremail: req.user.email })
+        .then((resp) => {
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            res.json(resp);
+        }, (err) => next(err))
+        .catch((err) => next(err));
+    }
+    else {
+        err = new Error('Authentication ERROR: ' + req.user + ' not admin');
+        err.status = 404;
+        return next(err);
+    }(err) => next(err)
     .catch((err) => next(err));
 });
+
+// ================================UPDATES=======================================
 
 shipmentRouter.route('/:shipmentId/updates')
 .get((req,res,next) => {
@@ -100,7 +168,7 @@ shipmentRouter.route('/:shipmentId/updates')
     }, (err) => next(err))
     .catch((err) => next(err));
 })
-.post((req, res, next) => {
+.post(authenticate.verifyUser,(req, res, next) => {
     Shipments.findById(req.params.shipmentId)
     .then((shipment) => {
         if (shipment != null) {
@@ -109,8 +177,9 @@ shipmentRouter.route('/:shipmentId/updates')
             .then((shipment) => {
                 res.statusCode = 200;
                 res.setHeader('Content-Type', 'application/json');
-                res.json(shipment);                
-            }, (err) => next(err));
+                res.json(shipment);
+            }, (err) => next(err))
+            .catch((err) => next(err));
         }
         else {
             err = new Error('Shipment ' + req.params.shipmentId + ' not found');
